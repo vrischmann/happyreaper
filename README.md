@@ -5,6 +5,22 @@ This is a command line client for [cassandra-reaper](https://github.com/thelastp
 
 It is a self contained binary that you can deploy anywhere without needing a working Python environment.
 
+Installation
+------------
+
+Either get a release from the [releases page](https://github.com/vrischmann/happyreaper/releases) or build it.
+
+Building
+--------
+
+To build happyreaper you need a [Go](https://golang.org) installation.
+
+Then you can install it with this command:
+
+```go
+go get github.com/vrischmann/happyreaper
+```
+
 Features
 --------
 
