@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -235,17 +236,101 @@ func viewSchedule(args []string) error {
 	return nil
 }
 
+type ScheduleSortBy string
+
+const (
+	ScheduleSortByNextActivation = "next-activation"
+)
+
+func (s ScheduleSortBy) String() string { return string(s) }
+func (s *ScheduleSortBy) Set(str string) error {
+	*s = ScheduleSortBy(str)
+	return nil
+}
+
+func callListSchedules(qry url.Values) ([]RepairSchedule, error) {
+	const op = "callListSchedules"
+
+	resp, err := http.Get(makeURL("/repair_schedule") + "?" + qry.Encode())
+	if err != nil {
+		return nil, errors.E(errors.IO, op, err)
+	}
+	defer resp.Body.Close()
+
+	var buf bytes.Buffer
+	rd := io.TeeReader(resp.Body, &buf)
+
+	if resp.StatusCode != http.StatusOK {
+		io.Copy(&buf, rd)
+		return nil, errors.Str(buf.String())
+	}
+
+	var res []RepairSchedule
+	dec := json.NewDecoder(rd)
+
+	if err := dec.Decode(&res); err != nil {
+		return nil, errors.E(errors.IO, op, err)
+	}
+	return res, nil
+}
+
+func sortSchedules(res []RepairSchedule, sortBy ScheduleSortBy, reverse bool) {
+	switch {
+	case sortBy == ScheduleSortByNextActivation && !reverse:
+		sort.Slice(res, func(i, j int) bool {
+			return res[i].NextActivation.Before(*res[j].NextActivation)
+		})
+	case sortBy == ScheduleSortByNextActivation:
+		sort.Slice(res, func(i, j int) bool {
+			return res[i].NextActivation.After(*res[j].NextActivation)
+		})
+	}
+}
+
+func nextSchedule(args []string) error {
+	const op = "nextSchedule"
+
+	var fs = flag.NewFlagSet("next-schedule", flag.ContinueOnError)
+
+	err := fs.Parse(args)
+	switch {
+	case err == flag.ErrHelp:
+		return nil
+	case err != nil:
+		return err
+	}
+
+	res, err := callListSchedules(make(url.Values))
+	if err != nil {
+		return err
+	}
+
+	if len(res) <= 0 {
+		return nil
+	}
+
+	sortSchedules(res, ScheduleSortByNextActivation, false)
+
+	schedule := res[0]
+	fmt.Printf("%+v\n\n", schedule)
+
+	return nil
+}
+
 func listSchedules(args []string) error {
 	const op = "listSchedules"
 
 	var (
-		fs         = flag.NewFlagSet("list-schedules", flag.ContinueOnError)
-		flCluster  = fs.String("cluster", "", "The cluster name")
-		flKeyspace = fs.String("keyspace", "", "The keyspace name")
-		flState    ScheduleState
+		fs            = flag.NewFlagSet("list-schedules", flag.ContinueOnError)
+		flCluster     = fs.String("cluster", "", "The cluster name")
+		flKeyspace    = fs.String("keyspace", "", "The keyspace name")
+		flState       ScheduleState
+		flSortBy      ScheduleSortBy
+		flReverseSort = fs.Bool("reverse-sort", false, "Revert the sorting")
 	)
 
 	fs.Var(&flState, "state", "Filter by state")
+	fs.Var(&flSortBy, "sort-by", "Sort by next-activation")
 
 	err := fs.Parse(args)
 	switch {
@@ -263,26 +348,12 @@ func listSchedules(args []string) error {
 		qry.Add("keyspaceName", *flKeyspace)
 	}
 
-	resp, err := http.Get(makeURL("/repair_schedule") + "?" + qry.Encode())
+	res, err := callListSchedules(qry)
 	if err != nil {
-		return errors.E(errors.IO, op, err)
-	}
-	defer resp.Body.Close()
-
-	var buf bytes.Buffer
-	rd := io.TeeReader(resp.Body, &buf)
-
-	if resp.StatusCode != http.StatusOK {
-		io.Copy(&buf, rd)
-		return errors.Str(buf.String())
+		return err
 	}
 
-	var res []RepairSchedule
-	dec := json.NewDecoder(rd)
-
-	if err := dec.Decode(&res); err != nil {
-		return errors.E(errors.IO, op, err)
-	}
+	sortSchedules(res, flSortBy, *flReverseSort)
 
 	for _, sched := range res {
 		keyspaceOK := *flKeyspace == "" || sched.KeyspaceName == *flKeyspace

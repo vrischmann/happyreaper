@@ -114,6 +114,7 @@ var commands = map[string]map[string]commandFn{
 		"pause-schedule":  pauseSchedule,
 		"resume-schedule": resumeSchedule,
 		"delete-schedule": deleteSchedule,
+		"next-schedule":   nextSchedule,
 	},
 }
 
