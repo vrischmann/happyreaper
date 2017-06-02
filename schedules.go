@@ -43,7 +43,7 @@ func (s *ScheduleState) Set(str string) error {
 }
 
 type RepairSchedule struct {
-	ID    int    `json:"id"`
+	ID    string `json:"id"`
 	Owner string `json:"owner"`
 
 	ClusterName  string `json:"cluster_name"`
@@ -79,7 +79,7 @@ func (r RepairSchedule) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			fmt.Fprintf(s, "%-20s %d\n", "id:", r.ID)
+			fmt.Fprintf(s, "%-20s %q\n", "id:", r.ID)
 			fmt.Fprintf(s, "%-20s %s\n", "owner:", r.Owner)
 			fmt.Fprintf(s, "%-20s %s\n", "cluster name:", r.ClusterName)
 			fmt.Fprintf(s, "%-20s %s\n", "keyspace name:", r.KeyspaceName)
