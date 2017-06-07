@@ -54,7 +54,7 @@ func (s *RunState) Set(str string) error {
 }
 
 type RepairRun struct {
-	ID    int    `json:"id"`
+	ID    string `json:"id"`
 	Owner string `json:"owner"`
 
 	ClusterName  string `json:"cluster_name"`
@@ -77,7 +77,7 @@ type RepairRun struct {
 }
 
 func (r RepairRun) String() string {
-	s := fmt.Sprintf("{id:%d owner:%q cluster:%q keyspace:%q state:%s cause:%q cf:%v intensity:%0.3f segments:%d repaired:%d lastEvent:%q duration:%q creation:%s start:%s end:%s pause:%d}",
+	s := fmt.Sprintf("{id:%s owner:%q cluster:%q keyspace:%q state:%s cause:%q cf:%v intensity:%0.3f segments:%d repaired:%d lastEvent:%q duration:%q creation:%s start:%s end:%s pause:%d}",
 		r.ID, r.Owner,
 		r.ClusterName, r.KeyspaceName,
 		r.State, r.Cause,
@@ -94,7 +94,7 @@ func (r RepairRun) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			fmt.Fprintf(s, "%-20s %d\n", "id:", r.ID)
+			fmt.Fprintf(s, "%-20s %s\n", "id:", r.ID)
 			fmt.Fprintf(s, "%-20s %s\n", "owner:", r.Owner)
 			fmt.Fprintf(s, "%-20s %s\n", "cluster name:", r.ClusterName)
 			fmt.Fprintf(s, "%-20s %s\n", "keyspace name:", r.KeyspaceName)
@@ -210,7 +210,7 @@ func viewRepair(args []string) error {
 
 	var (
 		fs   = flag.NewFlagSet("view-repair", flag.ContinueOnError)
-		flID = fs.Int("id", -1, "The repair ID")
+		flID = fs.String("id", "", "The repair ID")
 	)
 
 	err := fs.Parse(args)
@@ -221,11 +221,11 @@ func viewRepair(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 
-	resp, err := http.Get(makeURL("/repair_run/" + strconv.Itoa(*flID)))
+	resp, err := http.Get(makeURL("/repair_run/" + *flID))
 	if err != nil {
 		return errors.E(errors.IO, op, err)
 	}
@@ -251,13 +251,13 @@ func viewRepair(args []string) error {
 	return nil
 }
 
-func changeRepairState(repairID int, state RunState) error {
+func changeRepairState(repairID string, state RunState) error {
 	const op = "changeRepairState"
 
 	qry := make(url.Values)
 	qry.Add("state", state.String())
 
-	ur := makeURL("/repair_run/"+strconv.Itoa(repairID)) + "?" + qry.Encode()
+	ur := makeURL("/repair_run/"+repairID) + "?" + qry.Encode()
 
 	req, err := http.NewRequest("PUT", ur, nil)
 	if err != nil {
@@ -290,7 +290,7 @@ func changeRepairState(repairID int, state RunState) error {
 func pauseRepair(args []string) error {
 	var (
 		fs   = flag.NewFlagSet("pause-repair", flag.ContinueOnError)
-		flID = fs.Int("id", -1, "The repair ID")
+		flID = fs.String("id", "", "The repair ID")
 	)
 
 	err := fs.Parse(args)
@@ -301,7 +301,7 @@ func pauseRepair(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 
@@ -311,7 +311,7 @@ func pauseRepair(args []string) error {
 func resumeRepair(args []string) error {
 	var (
 		fs   = flag.NewFlagSet("resume-repair", flag.ContinueOnError)
-		flID = fs.Int("id", -1, "The repair ID")
+		flID = fs.String("id", "", "The repair ID")
 	)
 
 	err := fs.Parse(args)
@@ -322,7 +322,7 @@ func resumeRepair(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 
@@ -334,7 +334,7 @@ func deleteRepair(args []string) error {
 
 	var (
 		fs      = flag.NewFlagSet("delete-repair", flag.ContinueOnError)
-		flID    = fs.Int("id", -1, "The repair ID")
+		flID    = fs.String("id", "", "The repair ID")
 		flOwner = fs.String("owner", "", "The owner")
 	)
 
@@ -346,7 +346,7 @@ func deleteRepair(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 	if *flOwner == "" {
@@ -356,7 +356,7 @@ func deleteRepair(args []string) error {
 	qry := make(url.Values)
 	qry.Add("owner", *flOwner)
 
-	ur := makeURL("/repair_run/" + strconv.Itoa(*flID) + "?" + qry.Encode())
+	ur := makeURL("/repair_run/" + *flID + "?" + qry.Encode())
 
 	req, err := http.NewRequest("DELETE", ur, nil)
 	if err != nil {

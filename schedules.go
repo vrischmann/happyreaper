@@ -195,7 +195,7 @@ func viewSchedule(args []string) error {
 
 	var (
 		fs   = flag.NewFlagSet("view-schedule", flag.ContinueOnError)
-		flID = fs.Int("id", -1, "The repair ID")
+		flID = fs.String("id", "", "The repair ID")
 	)
 
 	err := fs.Parse(args)
@@ -206,11 +206,11 @@ func viewSchedule(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 
-	resp, err := http.Get(makeURL("/repair_schedule/" + strconv.Itoa(*flID)))
+	resp, err := http.Get(makeURL("/repair_schedule/" + *flID))
 	if err != nil {
 		return errors.E(errors.IO, op, err)
 	}
@@ -374,7 +374,7 @@ func deleteSchedule(args []string) error {
 
 	var (
 		fs      = flag.NewFlagSet("delete-schedule", flag.ContinueOnError)
-		flID    = fs.Int("id", -1, "The schedule ID")
+		flID    = fs.String("id", "", "The schedule ID")
 		flOwner = fs.String("owner", "", "The owner")
 	)
 
@@ -386,7 +386,7 @@ func deleteSchedule(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 	if *flOwner == "" {
@@ -396,7 +396,7 @@ func deleteSchedule(args []string) error {
 	qry := make(url.Values)
 	qry.Add("owner", *flOwner)
 
-	ur := makeURL("/repair_schedule/"+strconv.Itoa(*flID)) + "?" + qry.Encode()
+	ur := makeURL("/repair_schedule/"+*flID) + "?" + qry.Encode()
 
 	req, err := http.NewRequest("DELETE", ur, nil)
 	if err != nil {
@@ -424,20 +424,20 @@ func deleteSchedule(args []string) error {
 		return errors.E(errors.IO, op, err)
 	}
 
-	color.Yellow("Schedule #%d correctly deleted", *flID)
+	color.Yellow("Schedule %s correctly deleted", *flID)
 
 	fmt.Printf("%+v\n", res)
 
 	return nil
 }
 
-func changeScheduleState(repairID int, state ScheduleState) error {
+func changeScheduleState(repairID string, state ScheduleState) error {
 	const op = "changeScheduleState"
 
 	qry := make(url.Values)
 	qry.Add("state", state.String())
 
-	ur := makeURL("/repair_schedule/"+strconv.Itoa(repairID)) + "?" + qry.Encode()
+	ur := makeURL("/repair_schedule/"+repairID) + "?" + qry.Encode()
 
 	req, err := http.NewRequest("PUT", ur, nil)
 	if err != nil {
@@ -470,7 +470,7 @@ func changeScheduleState(repairID int, state ScheduleState) error {
 func pauseSchedule(args []string) error {
 	var (
 		fs   = flag.NewFlagSet("pause-schedule", flag.ContinueOnError)
-		flID = fs.Int("id", -1, "The schedule ID")
+		flID = fs.String("id", "", "The schedule ID")
 	)
 
 	err := fs.Parse(args)
@@ -481,7 +481,7 @@ func pauseSchedule(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 
@@ -491,7 +491,7 @@ func pauseSchedule(args []string) error {
 func resumeSchedule(args []string) error {
 	var (
 		fs   = flag.NewFlagSet("resume-schedule", flag.ContinueOnError)
-		flID = fs.Int("id", -1, "The schedule ID")
+		flID = fs.String("id", "", "The schedule ID")
 	)
 
 	err := fs.Parse(args)
@@ -502,7 +502,7 @@ func resumeSchedule(args []string) error {
 		return err
 	}
 
-	if *flID <= 0 {
+	if *flID == "" {
 		return errors.Str("please provide a valid ID")
 	}
 
