@@ -180,7 +180,7 @@ func listRepairs(args []string) error {
 		case *flKeyspace != "" && *flKeyspace != run.KeyspaceName:
 			continue
 
-		case len(flTables) > 0 && contains(run.ColumnFamilies, flTables):
+		case len(flTables) > 0 && !contains(run.ColumnFamilies, flTables):
 			continue
 
 		case *flOwner != "" && *flOwner != run.Owner:
