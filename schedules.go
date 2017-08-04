@@ -183,7 +183,7 @@ func addSchedule(args []string) error {
 		return errors.E(errors.IO, op, err)
 	}
 
-	color.Yellow("Schedule #%d correctly added", res.ID)
+	color.Yellow("Schedule #%s correctly added", res.ID)
 
 	fmt.Printf("%+v\n", res)
 
