@@ -386,15 +386,16 @@ func addRepair(args []string) error {
 	const op = "addRepair"
 
 	var (
-		fs          = flag.NewFlagSet("add-repair", flag.ContinueOnError)
-		flCluster   = fs.String("cluster", "", "The cluster name")
-		flKeyspace  = fs.String("keyspace", "", "The keyspace name")
-		flTables    flagutil.Strings
-		flOwner     = fs.String("owner", "", "The owner")
-		flCause     = fs.String("cause", "", "The cause for the repair")
-		flSegments  = fs.Int("segments", 200, "The number of segments")
-		flPar       Parallelism
-		flIntensity = fs.Float64("intensity", 0.5, "The intensity")
+		fs            = flag.NewFlagSet("add-repair", flag.ContinueOnError)
+		flCluster     = fs.String("cluster", "", "The cluster name")
+		flKeyspace    = fs.String("keyspace", "", "The keyspace name")
+		flTables      flagutil.Strings
+		flOwner       = fs.String("owner", "", "The owner")
+		flCause       = fs.String("cause", "", "The cause for the repair")
+		flSegments    = fs.Int("segments", 200, "The number of segments")
+		flPar         Parallelism
+		flIntensity   = fs.Float64("intensity", 0.5, "The intensity")
+		flIncremental = fs.Bool("inc", false, "Incremental repair or not")
 	)
 
 	fs.Var(&flTables, "tables", "The tables to repair")
@@ -434,6 +435,7 @@ func addRepair(args []string) error {
 	qry.Add("segmentCount", strconv.Itoa(*flSegments))
 	qry.Add("repairParallelism", flPar.String())
 	qry.Add("intensity", fmt.Sprintf("%0.3f", *flIntensity))
+	qry.Add("incrementalRepair", fmt.Sprintf("%v", *flIncremental))
 
 	ur := makeURL("/repair_run?") + qry.Encode()
 
