@@ -460,7 +460,7 @@ func addRepair(args []string) error {
 		return errors.E(errors.IO, op, err)
 	}
 
-	color.Yellow("Repair #%d correctly added", res.ID)
+	color.Yellow("Repair #%v correctly added", res.ID)
 
 	fmt.Printf("%+v\n", res)
 
