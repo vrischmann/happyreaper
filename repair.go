@@ -397,11 +397,13 @@ func addRepair(args []string) error {
 		flIntensity   = fs.Float64("intensity", 0.5, "The intensity")
 		flIncremental = fs.Bool("inc", false, "Incremental repair or not")
 		flNodes       flagutil.Strings
+		flDatacenters flagutil.Strings
 	)
 
 	fs.Var(&flTables, "tables", "The tables to repair")
 	fs.Var(&flPar, "par", "The parallelism to use (default SEQUENTIAL)")
 	fs.Var(&flNodes, "nodes", "The nodes to repair")
+	fs.Var(&flDatacenters, "datacenters", "The datacenters to repair")
 
 	err := fs.Parse(args)
 	switch {
@@ -439,6 +441,7 @@ func addRepair(args []string) error {
 	qry.Add("intensity", fmt.Sprintf("%0.3f", *flIntensity))
 	qry.Add("incrementalRepair", fmt.Sprintf("%v", *flIncremental))
 	qry.Add("nodes", strings.Join(flNodes, ","))
+	qry.Add("datacenters", strings.Join(flDatacenters, ","))
 
 	ur := makeURL("/repair_run?") + qry.Encode()
 
