@@ -386,24 +386,26 @@ func addRepair(args []string) error {
 	const op = "addRepair"
 
 	var (
-		fs            = flag.NewFlagSet("add-repair", flag.ContinueOnError)
-		flCluster     = fs.String("cluster", "", "The cluster name")
-		flKeyspace    = fs.String("keyspace", "", "The keyspace name")
-		flTables      flagutil.Strings
-		flOwner       = fs.String("owner", "", "The owner")
-		flCause       = fs.String("cause", "", "The cause for the repair")
-		flSegments    = fs.Int("segments", 200, "The number of segments")
-		flPar         Parallelism
-		flIntensity   = fs.Float64("intensity", 0.5, "The intensity")
-		flIncremental = fs.Bool("inc", false, "Incremental repair or not")
-		flNodes       flagutil.Strings
-		flDatacenters flagutil.Strings
+		fs                  = flag.NewFlagSet("add-repair", flag.ContinueOnError)
+		flCluster           = fs.String("cluster", "", "The cluster name")
+		flKeyspace          = fs.String("keyspace", "", "The keyspace name")
+		flTables            flagutil.Strings
+		flOwner             = fs.String("owner", "", "The owner")
+		flCause             = fs.String("cause", "", "The cause for the repair")
+		flSegments          = fs.Int("segments", 200, "The number of segments")
+		flPar               Parallelism
+		flIntensity         = fs.Float64("intensity", 0.5, "The intensity")
+		flIncremental       = fs.Bool("inc", false, "Incremental repair or not")
+		flNodes             flagutil.Strings
+		flDatacenters       flagutil.Strings
+		flBlacklistedTables flagutil.Strings
 	)
 
 	fs.Var(&flTables, "tables", "The tables to repair")
 	fs.Var(&flPar, "par", "The parallelism to use (default SEQUENTIAL)")
 	fs.Var(&flNodes, "nodes", "The nodes to repair")
 	fs.Var(&flDatacenters, "datacenters", "The datacenters to repair")
+	fs.Var(&flBlacklistedTables, "blacklisted-tables", "Tables to NOT repair")
 
 	err := fs.Parse(args)
 	switch {
@@ -442,6 +444,7 @@ func addRepair(args []string) error {
 	qry.Add("incrementalRepair", fmt.Sprintf("%v", *flIncremental))
 	qry.Add("nodes", strings.Join(flNodes, ","))
 	qry.Add("datacenters", strings.Join(flDatacenters, ","))
+	qry.Add("blacklistedTables", strings.Join(flBlacklistedTables, ","))
 
 	ur := makeURL("/repair_run?") + qry.Encode()
 
