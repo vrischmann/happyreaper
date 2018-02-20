@@ -1,19 +1,19 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"log"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/vrischmann/flagutil"
 	"github.com/vrischmann/happyreaper/errors"
 )
 
 func makeURL(path string) string {
-	return "http://" + flReaperHost[0] + path
+	host := flReaperHost[0]
+	return "http://" + host + path
 }
 
 type Parallelism string
@@ -77,108 +77,29 @@ func (t myTime) String() string {
 }
 
 var (
-	mainFs       = flag.NewFlagSet("main", flag.ContinueOnError)
-	flReaperHost flagutil.NetworkAddresses
+	rootCmd = &cobra.Command{
+		Use:   "happyreaper [command]",
+		Short: "communicate with Cassandra Reaper",
+		Run: func(cmd *cobra.Command, args []string) {
+			logrus.Warn("missing command")
+			cmd.HelpFunc()(cmd, args)
+		},
+	}
+
+	reaperHost   flagutil.NetworkAddresses
+	flReaperHost = pflag.Flag{
+		Name:      "host",
+		Shorthand: "H",
+		Value:     &reaperHost,
+	}
 )
 
-func printMainUsage(name string, fs *flag.FlagSet) {
-	mainFs.PrintDefaults()
-	fmt.Fprintf(os.Stderr, "Usage of %s\n", name)
-	fs.PrintDefaults()
-}
-
 func init() {
-	mainFs.Var(&flReaperHost, "host", "The reaper host")
-}
-
-type commandFn func([]string) error
-
-var commands = map[string]map[string]commandFn{
-	"cluster": {
-		"add-cluster":   addCluster,
-		"view-cluster":  viewCluster,
-		"list-clusters": listClusters,
-	},
-	"repair": {
-		"add-repair":    addRepair,
-		"view-repair":   viewRepair,
-		"list-repairs":  listRepairs,
-		"pause-repair":  pauseRepair,
-		"resume-repair": resumeRepair,
-		"delete-repair": deleteRepair,
-	},
-	"schedule": {
-		"add-schedule":    addSchedule,
-		"view-schedule":   viewSchedule,
-		"list-schedules":  listSchedules,
-		"pause-schedule":  pauseSchedule,
-		"resume-schedule": resumeSchedule,
-		"delete-schedule": deleteSchedule,
-		"next-schedule":   nextSchedule,
-	},
-}
-
-func findCommand(name string) commandFn {
-	for _, group := range commands {
-		if fn, ok := group[name]; ok {
-			return fn
-		}
-	}
-	return nil
-}
-
-func printUsage() {
-	fmt.Println("\nAvailable sub commands:")
-	for groupName, group := range commands {
-		fmt.Printf("\t%s\n", groupName)
-		for command := range group {
-			fmt.Printf("\t\t%s\n", command)
-		}
-	}
+	rootCmd.PersistentFlags().AddFlag(&flReaperHost)
 }
 
 func main() {
-	err := mainFs.Parse(os.Args[1:])
-	switch {
-	case err == flag.ErrHelp:
-		printUsage()
-		return
-	case err != nil:
-		log.Fatal(err)
-		return
-	}
-
-	if len(flReaperHost) == 0 {
-		val := os.Getenv("REAPER_HOST")
-		if val != "" {
-			if err := flReaperHost.Set(val); err != nil {
-				log.Fatalf("REAPER_HOST value is invalid. err=%v", err)
-			}
-		}
-	}
-
-	if len(flReaperHost) == 0 {
-		log.Println("please provide a reaper host")
-		flag.PrintDefaults()
-		printUsage()
-		os.Exit(1)
-	}
-
-	if mainFs.NArg() < 1 {
-		log.Println("please provide a sub command")
-		flag.PrintDefaults()
-		printUsage()
-		os.Exit(1)
-	}
-
-	command := mainFs.Arg(0)
-	fn := findCommand(command)
-
-	if fn == nil {
-		log.Fatalf("invalid command %q", command)
-	}
-
-	if err := fn(mainFs.Args()[1:]); err != nil {
-		log.Fatal(err)
+	if err := rootCmd.Execute(); err != nil {
+		logrus.Fatal(err)
 	}
 }

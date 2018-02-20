@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/fatih/color"
 	"github.com/vrischmann/flagutil"
 	"github.com/vrischmann/happyreaper/errors"
@@ -118,7 +120,7 @@ func (r RepairRun) Format(s fmt.State, verb rune) {
 	}
 }
 
-func listRepairs(args []string) error {
+func runListRepairs(cmd *cobra.Command, args []string) error {
 	const op = "listRepairs"
 
 	var (
@@ -205,7 +207,7 @@ func listRepairs(args []string) error {
 	return nil
 }
 
-func viewRepair(args []string) error {
+func runViewRepair(cmd *cobra.Command, args []string) error {
 	const op = "viewRepair"
 
 	var (
@@ -287,7 +289,7 @@ func changeRepairState(repairID string, state RunState) error {
 	return nil
 }
 
-func pauseRepair(args []string) error {
+func runPauseRepair(cmd *cobra.Command, args []string) error {
 	var (
 		fs   = flag.NewFlagSet("pause-repair", flag.ContinueOnError)
 		flID = fs.String("id", "", "The repair ID")
@@ -308,7 +310,7 @@ func pauseRepair(args []string) error {
 	return changeRepairState(*flID, Paused)
 }
 
-func resumeRepair(args []string) error {
+func runResumeRepair(cmd *cobra.Command, args []string) error {
 	var (
 		fs   = flag.NewFlagSet("resume-repair", flag.ContinueOnError)
 		flID = fs.String("id", "", "The repair ID")
@@ -329,7 +331,7 @@ func resumeRepair(args []string) error {
 	return changeRepairState(*flID, Running)
 }
 
-func deleteRepair(args []string) error {
+func runDeleteRepair(cmd *cobra.Command, args []string) error {
 	const op = "deleteRepair"
 
 	var (
@@ -382,7 +384,7 @@ func deleteRepair(args []string) error {
 	return nil
 }
 
-func addRepair(args []string) error {
+func runAddRepair(cmd *cobra.Command, args []string) error {
 	const op = "addRepair"
 
 	var (
@@ -478,4 +480,55 @@ func addRepair(args []string) error {
 	color.Yellow("NOTE: remember to resume-repair the repair just created\n")
 
 	return nil
+}
+
+var (
+	repairCmd = &cobra.Command{
+		Use:   "repair",
+		Short: "manipulate repairs",
+	}
+
+	addRepairCmd = &cobra.Command{
+		Use:   "add",
+		Short: "add a single repair",
+		RunE:  runAddRepair,
+	}
+	deleteRepairCmd = &cobra.Command{
+		Use:   "delete",
+		Short: "delete a single repair",
+		RunE:  runDeleteRepair,
+	}
+	listRepairsCmd = &cobra.Command{
+		Use:   "list",
+		Short: "list all repairs",
+		RunE:  runListRepairs,
+	}
+	pauseRepairCmd = &cobra.Command{
+		Use:   "pause",
+		Short: "pause a repair",
+		RunE:  runPauseRepair,
+	}
+	resumeRepairCmd = &cobra.Command{
+		Use:   "resume",
+		Short: "resume a paused repair",
+		RunE:  runResumeRepair,
+	}
+	viewRepairCmd = &cobra.Command{
+		Use:   "view",
+		Short: "view a single repair",
+		RunE:  runViewRepair,
+	}
+)
+
+func init() {
+	repairCmd.AddCommand(
+		addRepairCmd,
+		deleteRepairCmd,
+		listRepairsCmd,
+		pauseRepairCmd,
+		resumeRepairCmd,
+		viewRepairCmd,
+	)
+
+	rootCmd.AddCommand(repairCmd)
 }
