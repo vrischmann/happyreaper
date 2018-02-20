@@ -424,6 +424,8 @@ func addRepair(args []string) error {
 		return errors.Str("please provide an owner")
 	case *flCause == "":
 		return errors.Str("please provide a cause")
+	case len(flNodes) > 0 && len(flDatacenters) > 0:
+		return errors.Str("-nodes and -datacenters are mutually exclusive")
 	}
 
 	if flPar == "" {
